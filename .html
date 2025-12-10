@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barnsley Fern Generator</title>
+    <style>
+        /* CSS: Styling the page to look modern and clean */
+        body {
+            background-color: #121212; /* Dark background */
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .canvas-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.1);
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #1b5e20;
+        }
+
+        p {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Barnsley Fern</h1>
+    
+    <div class="canvas-container">
+        <canvas id="fernCanvas" width="600" height="800"></canvas>
+    </div>
+
+    <div class="controls">
+        <button onclick="drawFern()">Regenerate</button>
+        <button onclick="downloadImage()">Save Image</button>
+    </div>
+    <p id="status">Rendered 0 points</p>
+
+    <script>
+        const canvas = document.getElementById('fernCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status');
+        
+        // Configuration
+        const ITERATIONS = 100000; // Total dots to draw
+        const SCALE = 80;          // Size of the fern
+        
+        // Colors
+        const FERN_COLOR = '#4CAF50'; // Vibrant Green
+        
+        function drawFern() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = FERN_COLOR;
+            
+            // Starting coordinates
+            let x = 0;
+            let y = 0;
+
+            // To prevent freezing the browser, we draw in batches (animation frame)
+            let i = 0;
+            const batchSize = 2500; // Draw 2500 dots per frame
+
+            function drawBatch() {
+                for (let k = 0; k < batchSize; k++) {
+                    if (i >= ITERATIONS) break;
+
+                    let nextX, nextY;
+                    let r = Math.random();
+
+                    // --- The Fractal Math (Affine Transformations) ---
+                    
+                    // 1. Stem (1% chance)
+                    if (r < 0.01) {
+                        nextX = 0;
+                        nextY = 0.16 * y;
+                    } 
+                    // 2. Successive smaller leaflets (85% chance)
+                    else if (r < 0.86) {
+                        nextX = 0.85 * x + 0.04 * y;
+                        nextY = -0.04 * x + 0.85 * y + 1.6;
+                    } 
+                    // 3. Largest left-hand leaflet (7% chance)
+                    else if (r < 0.93) {
+                        nextX = 0.2 * x - 0.26 * y;
+                        nextY = 0.23 * x + 0.22 * y + 1.6;
+                    } 
+                    // 4. Largest right-hand leaflet (7% chance)
+                    else {
+                        nextX = -0.15 * x + 0.28 * y;
+                        nextY = 0.26 * x + 0.24 * y + 0.44;
+                    }
+
+                    x = nextX;
+                    y = nextY;
+
+                    // Coordinate Mapping: 
+                    // Shift x to center (width/2) and flip y (height)
+                    let plotX = Math.floor(canvas.width / 2 + x * SCALE);
+                    let plotY = Math.floor(canvas.height - y * SCALE); // Subtract from height to flip Y
+
+                    // Draw a 1x1 pixel
+                    ctx.fillRect(plotX, plotY + 50, 1, 1);
+                    i++;
+                }
+
+                statusText.innerText = `Rendered ${i.toLocaleString()} points`;
+
+                if (i < ITERATIONS) {
+                    requestAnimationFrame(drawBatch);
+                }
+            }
+
+            drawBatch();
+        }
+
+        // Function to save the canvas as an image
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'barnsley-fern.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Start drawing on load
+        window.onload = drawFern;
+    </script>
+</body>
+</html>
